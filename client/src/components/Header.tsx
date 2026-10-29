@@ -24,17 +24,17 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
   };
 
   return (
-    <header className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface border-b border-borderCustom px-6 py-4 gap-4 sticky top-0 z-30">
+    <header className="flex justify-between items-center bg-surface border-b border-borderCustom px-4 md:px-6 py-3 md:py-4 sticky top-0 z-30">
       <div>
-        <h1 className="text-xl font-bold text-white">{title}</h1>
-        {subtitle && <p className="text-xs text-textMuted mt-0.5">{subtitle}</p>}
+        <h1 className="text-lg md:text-xl font-bold text-white">{title}</h1>
+        {subtitle && <p className="text-[11px] md:text-xs text-textMuted mt-0.5">{subtitle}</p>}
       </div>
-      <div className="flex items-center space-x-4 relative">
+      <div className="flex items-center space-x-2 md:space-x-4 relative">
         <SyncIndicator />
 
         {user && (
-          <div className="flex items-center space-x-3 bg-surfaceSecondary border border-borderCustom px-3 py-1.5 rounded-xl">
-            <div className="w-8 h-8 rounded-full bg-primaryPink/20 text-primaryPink flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+          <div className="flex items-center space-x-2 md:space-x-3 bg-surfaceSecondary border border-borderCustom px-2.5 py-1.5 rounded-xl">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primaryPink/20 text-primaryPink flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
               {user.avatar ? (
                 <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
               ) : (
