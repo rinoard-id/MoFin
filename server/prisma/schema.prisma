@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String       @id @default(uuid())
+  email           String       @unique
+  passwordHash    String
+  name            String
+  avatar          String?
+  currency        String       @default("IDR")
+  timezone        String       @default("Asia/Jakarta")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  wallets         Wallet[]
+  categories      Category[]
+  transactions    Transaction[]
+  holdings        InvestmentHolding[]
+  investmentTxs   InvestmentTransaction[]
+  savingsGoals    SavingsGoal[]
+  liabilities     Liability[]
+  billReminders   BillReminder[]
+  syncOperations  SyncOperation[]
+}
+
+model Wallet {
+  id                 String          @id @default(uuid())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  type               String          @default("BANK") // BANK, DIGITAL_BANK, E_WALLET, CASH, SAVINGS, CUSTOM
+  institution        String?
+  currency           String          @default("IDR")
+  initialBalance     Decimal         @default(0)
+  initialBalanceDate DateTime        @default(now())
+  icon               String?
+  color              String?
+  isArchived         Boolean         @default(false)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  transactionsAsSource Transaction[] @relation("WalletSource")
+  transactionsAsTarget Transaction[] @relation("WalletTarget")
+  billReminders      BillReminder[]
+}
+
+model Category {
+  id           String          @id @default(uuid())
+  userId       String?         // Nullable for system default categories
+  user         User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  type         String          // INCOME, EXPENSE
+  icon         String?
+  color        String?
+  parentId     String?
+  parent       Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subcategories Category[]     @relation("CategoryHierarchy")
+  transactions Transaction[]
+}
+
+model Transaction {
+  id             String          @id @default(uuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId       String
+  wallet         Wallet          @relation("WalletSource", fields: [walletId], references: [id], onDelete: Cascade)
+  targetWalletId String?
+  targetWallet   Wallet?         @relation("WalletTarget", fields: [targetWalletId], references: [id], onDelete: SetNull)
+  categoryId     String?
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  type           String          // INCOME, EXPENSE, TRANSFER, REFUND, ADJUSTMENT
+  amount         Decimal
+  fee            Decimal         @default(0)
+  currency       String          @default("IDR")
+  date           DateTime        @default(now())
+  notes          String?
+  payee          String?
+  tags           String          @default("[]")
+  idempotencyKey String?         @unique
+  syncStatus     String          @default("SYNCED")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model InvestmentInstrument {
+  id               String            @id @default(uuid())
+  symbol           String            @unique
+  name             String
+  assetType        String            // STOCK, CRYPTO, GOLD, COMMODITY, MUTUAL_FUND, BOND, ETF, CUSTOM
+  currency         String            @default("IDR")
+  currentPrice     Decimal
+  lastPriceUpdate  DateTime          @default(now())
+  source           String            @default("MANUAL")
+
+  holdings         InvestmentHolding[]
+}
+
+model InvestmentHolding {
+  id               String               @id @default(uuid())
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instrumentId     String
+  instrument       InvestmentInstrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  units            Decimal
+  averageBuyPrice  Decimal
+  realizedPnL      Decimal              @default(0)
+  updatedAt        DateTime             @updatedAt
+
+  transactions     InvestmentTransaction[]
+}
+
+model InvestmentTransaction {
+  id             String             @id @default(uuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdingId      String
+  holding        InvestmentHolding  @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+  type           String             // BUY, SELL, DIVIDEND, FEE
+  units          Decimal
+  pricePerUnit   Decimal
+  totalAmount    Decimal
+  fee            Decimal            @default(0)
+  tax            Decimal            @default(0)
+  date           DateTime           @default(now())
+  notes          String?
+  createdAt      DateTime           @default(now())
+}
+
+model SavingsGoal {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  icon           String?
+  targetAmount   Decimal
+  currentAmount  Decimal      @default(0)
+  targetDate     DateTime?
+  status         String       @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  color          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Liability {
+  id              String          @id @default(uuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  type            String          // DEBT, LOAN, RECEIVABLE, INSTALLMENT
+  totalAmount     Decimal
+  remainingAmount Decimal
+  interestRate    Decimal?
+  dueDate         DateTime?
+  status          String          @default("ACTIVE") // ACTIVE, PAID
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model BillReminder {
+  id          String        @id @default(uuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId    String?
+  wallet      Wallet?       @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  name        String
+  amount      Decimal
+  frequency   String        @default("MONTHLY") // DAILY, WEEKLY, MONTHLY, YEARLY
+  dueDate     DateTime
+  isPaid      Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SyncOperation {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operationId     String   @unique
+  entityType      String
+  entityId        String
+  payload         String
+  clientTimestamp DateTime
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+}
