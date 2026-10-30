@@ -24,6 +24,9 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const handleOpen = () => setShowAddTxModal(true);
+    window.addEventListener('open-add-transaction', handleOpen);
+    return () => window.removeEventListener('open-add-transaction', handleOpen);
   }, []);
 
   const loadData = async () => {
@@ -256,10 +259,10 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Action Button (FAB) to open Add Transaction Modal */}
+      {/* Floating Action Button (FAB) to open Add Transaction Modal (Desktop only) */}
       <button
         onClick={() => setShowAddTxModal(true)}
-        className="fixed bottom-20 right-6 md:bottom-8 md:right-8 bg-primaryPink text-white p-4 rounded-full shadow-2xl z-40 hover:scale-110 transition-transform flex items-center justify-center group"
+        className="hidden md:flex fixed bottom-8 right-8 bg-primaryPink text-white p-4 rounded-full shadow-2xl z-40 hover:scale-110 transition-transform items-center justify-center group"
         title="Tambah Transaksi"
       >
         <Plus className="w-6 h-6" />
@@ -270,7 +273,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Add Transaction Modal */}
       {showAddTxModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
           <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">Tambah Transaksi Baru</h3>

@@ -38,6 +38,9 @@ export const Investments: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const handleOpen = () => setShowAddModal(true);
+    window.addEventListener('open-add-investment', handleOpen);
+    return () => window.removeEventListener('open-add-investment', handleOpen);
   }, []);
 
   const loadData = async () => {
@@ -123,9 +126,9 @@ export const Investments: React.FC = () => {
       <Header title="Investasi Saya" subtitle="Kelola dan pantau seluruh portofolio investasi Anda." />
 
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Header Action & Filters in 1 row */}
-        <div className="flex items-center justify-between gap-3 overflow-x-auto pb-2">
-          <div className="flex space-x-2">
+        {/* Header Action & Filters in 1 row with floating right add button */}
+        <div className="relative flex items-center">
+          <div className="flex space-x-2 overflow-x-auto pb-2 pr-14 w-full">
             <button
               onClick={() => setActiveTab('ALL')}
               className={`px-4 py-2 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${activeTab === 'ALL' ? 'bg-primaryPink text-white' : 'bg-surface text-textSecondary hover:text-white border border-borderCustom'}`}
@@ -161,10 +164,10 @@ export const Investments: React.FC = () => {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-primaryPink text-white p-2.5 rounded-xl text-sm font-medium flex items-center justify-center hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/25 shrink-0"
+            className="absolute right-0 top-0 bg-primaryPink text-white p-2.5 rounded-xl shadow-xl shadow-primaryPink/40 hover:scale-105 transition-transform flex items-center justify-center z-20 border border-white/10"
             title="Tambah Investasi"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5 text-white" />
           </button>
         </div>
 
@@ -237,7 +240,7 @@ export const Investments: React.FC = () => {
 
         {/* Add Investment Selection Modal */}
         {showAddModal && !selectedCategory && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-lg w-full space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-white">Pilih Jenis Investasi</h3>
@@ -293,7 +296,7 @@ export const Investments: React.FC = () => {
 
         {/* Logam Mulia Wizard Form */}
         {showAddModal && selectedCategory === 'GOLD' && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full">
               <h3 className="text-lg font-bold text-white mb-4">Tambah Logam Mulia</h3>
               <form
@@ -393,7 +396,7 @@ export const Investments: React.FC = () => {
 
         {/* Reksa Dana Wizard Form (With "Lainnya" Option) */}
         {showAddModal && selectedCategory === 'MUTUAL_FUND' && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full">
               <h3 className="text-lg font-bold text-white mb-4">Tambah Reksa Dana</h3>
               {!selectedMf ? (
@@ -546,7 +549,7 @@ export const Investments: React.FC = () => {
 
         {/* Saham Wizard Form (With "Lainnya" Option & No Broker Fee) */}
         {showAddModal && selectedCategory === 'STOCK' && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full">
               <h3 className="text-lg font-bold text-white mb-4">Tambah Saham</h3>
               {!selectedStock ? (
@@ -731,7 +734,7 @@ export const Investments: React.FC = () => {
 
         {/* Crypto Coming Soon Modal */}
         {cryptoModalOpen && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-sm w-full text-center space-y-4">
               <div className="bg-warningYellow/10 text-warningYellow p-3 rounded-2xl w-fit mx-auto">
                 <AlertCircle className="w-8 h-8" />

@@ -181,7 +181,7 @@ export const Wallets: React.FC = () => {
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full">
               <h3 className="text-lg font-bold text-white mb-4">Tambah Dompet Baru</h3>
               <form onSubmit={handleCreate} className="space-y-4">

@@ -24,17 +24,17 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
   };
 
   return (
-    <header className="flex justify-between items-center bg-surface border-b border-borderCustom px-4 md:px-6 py-3 md:py-4 sticky top-0 z-30">
+    <header className="flex justify-between items-center glass-panel border-b border-borderCustom px-4 md:px-6 py-3.5 md:py-4 sticky top-0 z-30">
       <div>
-        <h1 className="text-lg md:text-xl font-bold text-white">{title}</h1>
+        <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">{title}</h1>
         {subtitle && <p className="text-[11px] md:text-xs text-textMuted mt-0.5">{subtitle}</p>}
       </div>
       <div className="flex items-center space-x-2 md:space-x-4 relative">
         <SyncIndicator />
 
         {user && (
-          <div className="flex items-center space-x-2 md:space-x-3 bg-surfaceSecondary border border-borderCustom px-2.5 py-1.5 rounded-xl">
-            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primaryPink/20 text-primaryPink flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+          <div className="flex items-center space-x-2 md:space-x-3 bg-surfaceSecondary/80 border border-borderCustom px-3 py-1.5 rounded-2xl shadow-inner">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primaryPink/20 text-primaryPink flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 shadow-sm">
               {user.avatar ? (
                 <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
               ) : (
@@ -45,15 +45,15 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="text-textMuted hover:text-white p-1 rounded-lg transition-colors"
+                className="text-textMuted hover:text-white p-1 rounded-xl ios-touch transition-colors"
                 title="Menu Profil & Pengaturan"
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-surface border border-borderCustom rounded-xl shadow-2xl py-2 z-50">
-                  <div className="px-4 py-2 border-b border-borderCustom mb-1">
+                <div className="absolute right-0 mt-2 w-48 glass-panel border border-borderCustom rounded-2xl shadow-2xl py-2 z-50">
+                  <div className="px-4 py-2.5 border-b border-borderCustom mb-1">
                     <p className="text-xs font-bold text-white truncate">{user.name}</p>
                     <p className="text-[10px] text-textMuted truncate">{user.email}</p>
                   </div>
@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
                       setShowDropdown(false);
                       navigate('/profile');
                     }}
-                    className="w-full flex items-center space-x-2 px-4 py-2 text-xs text-textSecondary hover:text-white hover:bg-surfaceSecondary transition-colors"
+                    className="w-full flex items-center space-x-2 px-4 py-2 text-xs text-textSecondary hover:text-white hover:bg-surfaceSecondary/80 ios-touch transition-colors"
                   >
                     <Settings className="w-3.5 h-3.5 text-primaryPink" />
                     <span>Profil & Pengaturan</span>
@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
                       setShowDropdown(false);
                       handleLogout();
                     }}
-                    className="w-full flex items-center space-x-2 px-4 py-2 text-xs text-errorRed hover:bg-surfaceSecondary transition-colors"
+                    className="w-full flex items-center space-x-2 px-4 py-2 text-xs text-errorRed hover:bg-surfaceSecondary/80 ios-touch transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Keluar</span>

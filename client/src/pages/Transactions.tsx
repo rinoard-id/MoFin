@@ -20,6 +20,9 @@ export const Transactions: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const handleOpen = () => setShowModal(true);
+    window.addEventListener('open-add-transaction', handleOpen);
+    return () => window.removeEventListener('open-add-transaction', handleOpen);
   }, []);
 
   const loadData = async () => {
@@ -109,10 +112,10 @@ export const Transactions: React.FC = () => {
           <h2 className="text-lg font-bold text-white">Riwayat Transaksi</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-primaryPink text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center space-x-2 hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/20"
+            className="bg-primaryPink text-white p-2.5 rounded-xl hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/20 flex items-center justify-center"
+            title="Tambah Transaksi"
           >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Transaksi</span>
+            <Plus className="w-5 h-5" />
           </button>
         </div>
 
@@ -145,7 +148,7 @@ export const Transactions: React.FC = () => {
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
             <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full">
               <h3 className="text-lg font-bold text-white mb-4">Tambah Transaksi Baru</h3>
               <form onSubmit={handleCreate} className="space-y-4">

@@ -322,7 +322,7 @@ export const Profile: React.FC = () => {
 
       {/* Forgot Password Modal */}
       {showForgotModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]">
           <div className="bg-surface border border-borderCustom rounded-2xl p-6 max-w-md w-full space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-bold text-white flex items-center space-x-2">
