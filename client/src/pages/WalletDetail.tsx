@@ -9,6 +9,13 @@ export const WalletDetail: React.FC = () => {
   const navigate = useNavigate();
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
 
   useEffect(() => {
     loadWalletDetail();
@@ -24,6 +31,14 @@ export const WalletDetail: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const filteredTransactions = (wallet?.transactions || []).filter((tx: any) => {
+    if (selectedMonth === 'all') return true;
+    const txDate = new Date(tx.date);
+    return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
+  });
+
+  const titleText = selectedMonth === 'all' ? 'Mutasi Semua Waktu' : `Mutasi ${monthNames[selectedMonth]}`;
 
   const getWalletIcon = (type: string) => {
     switch (type) {
@@ -92,16 +107,32 @@ export const WalletDetail: React.FC = () => {
 
         {/* Mutasi Rekening Statement */}
         <div className="bg-surface border border-borderCustom rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-borderCustom bg-surfaceSecondary/50 flex justify-between items-center">
-            <h3 className="text-sm font-bold text-white">Daftar Mutasi Transaksi</h3>
-            <span className="text-xs text-textMuted">{wallet.transactions?.length || 0} Transaksi</span>
+          <div className="p-4 border-b border-borderCustom bg-surfaceSecondary/50 flex flex-wrap justify-between items-center gap-2">
+            <h3 className="text-sm font-bold text-white">{titleText}</h3>
+            <div className="flex items-center space-x-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedMonth(val === 'all' ? 'all' : parseInt(val, 10));
+                }}
+                className="bg-surface border border-borderCustom rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-primaryPink"
+              >
+                <option value={new Date().getMonth()}>Bulan Ini ({monthNames[new Date().getMonth()]})</option>
+                <option value="all">Semua Waktu</option>
+                {monthNames.map((m, idx) => (
+                  <option key={idx} value={idx}>{m}</option>
+                ))}
+              </select>
+              <span className="text-xs text-textMuted">({filteredTransactions.length})</span>
+            </div>
           </div>
           <div className="divide-y divide-borderCustom">
-            {(!wallet.transactions || wallet.transactions.length === 0) ? (
-              <div className="p-8 text-center text-textMuted text-xs">Belum ada riwayat mutasi transaksi pada dompet ini.</div>
+            {filteredTransactions.length === 0 ? (
+              <div className="p-8 text-center text-textMuted text-xs">Belum ada riwayat mutasi transaksi pada periode ini.</div>
             ) : (
-              wallet.transactions.map((tx: any) => {
-                const isIncome = tx.type === 'INCOME' || (tx.type === 'TRANSFER' && tx.targetWalletId === wallet.id);
+              filteredTransactions.map((tx: any) => {
+                const isIncome = tx.type === 'INCOME' || tx.type === 'REFUND' || tx.type === 'ADJUSTMENT' || (tx.type === 'TRANSFER' && tx.targetWalletId === wallet.id);
                 const isExpense = tx.type === 'EXPENSE' || (tx.type === 'TRANSFER' && tx.walletId === wallet.id);
                 return (
                   <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-surfaceSecondary/40 transition-colors">
@@ -112,7 +143,7 @@ export const WalletDetail: React.FC = () => {
                       <div>
                         <h4 className="font-semibold text-white text-sm">{tx.notes || tx.type}</h4>
                         <p className="text-[11px] text-textMuted">
-                          {new Date(tx.date).toLocaleDateString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                          {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           {tx.type === 'TRANSFER' && (
                             <span> • {tx.walletId === wallet.id ? `Transfer ke ${tx.targetWallet?.name}` : `Transfer dari ${tx.wallet?.name}`}</span>
                           )}

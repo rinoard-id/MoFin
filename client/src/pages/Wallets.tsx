@@ -36,19 +36,34 @@ const INSTITUTIONS_MAP: Record<string, { label: string; institution: string }[]>
   ],
 };
 
+const formatWalletType = (type: string) => {
+  switch (type) {
+    case 'BANK': return 'Bank';
+    case 'DIGITAL_BANK': return 'Digital';
+    case 'E_WALLET': return 'E-Wallet';
+    case 'CASH': return 'Cash';
+    default: return 'Custom';
+  }
+};
+
 export const Wallets: React.FC = () => {
   const navigate = useNavigate();
   const [wallets, setWallets] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [type, setType] = useState('BANK');
   const [selectedInstitution, setSelectedInstitution] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState('Tabungan Utama');
   const [institution, setInstitution] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
-  const [isCustomName, setIsCustomName] = useState(false);
 
   useEffect(() => {
     loadWallets();
+    const handleOpenWalletModal = () => {
+      handleTypeChange('BANK');
+      setShowModal(true);
+    };
+    window.addEventListener('open-add-wallet', handleOpenWalletModal);
+    return () => window.removeEventListener('open-add-wallet', handleOpenWalletModal);
   }, []);
 
   const loadWallets = async () => {
@@ -78,18 +93,14 @@ export const Wallets: React.FC = () => {
   const handleTypeChange = (newType: string) => {
     setType(newType);
     setSelectedInstitution('');
-    if (newType === 'CUSTOM') {
-      setIsCustomName(true);
-      setName('');
-      setInstitution('');
+    const list = INSTITUTIONS_MAP[newType];
+    if (list && list.length > 0) {
+      setSelectedInstitution(list[0].label);
+      setName('Tabungan Utama');
+      setInstitution(list[0].institution);
     } else {
-      setIsCustomName(false);
-      const list = INSTITUTIONS_MAP[newType];
-      if (list && list.length > 0) {
-        setSelectedInstitution(list[0].label);
-        setName(list[0].label);
-        setInstitution(list[0].institution);
-      }
+      setName('');
+      setInstitution('Lainnya');
     }
   };
 
@@ -98,7 +109,6 @@ export const Wallets: React.FC = () => {
     const list = INSTITUTIONS_MAP[type];
     const found = list?.find((item) => item.label === label);
     if (found) {
-      setName(found.label);
       setInstitution(found.institution);
     }
   };
@@ -126,6 +136,17 @@ export const Wallets: React.FC = () => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
   };
 
+  const formatNumberDot = (val: string | number) => {
+    if (val === '' || val === undefined || val === null) return '';
+    const clean = String(val).replace(/\D/g, '');
+    if (!clean) return '';
+    return parseInt(clean, 10).toLocaleString('id-ID');
+  };
+
+  const parseNumberDot = (val: string) => {
+    return val.replace(/\./g, '');
+  };
+
   return (
     <div className="min-h-screen bg-bgMain pb-24 md:pb-12">
       <Header title="Dompet & Rekening" subtitle="Kelola rekening bank, e-wallet, dan uang tunai Anda." />
@@ -138,10 +159,10 @@ export const Wallets: React.FC = () => {
               handleTypeChange('BANK');
               setShowModal(true);
             }}
-            className="bg-primaryPink text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center space-x-2 hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/20"
+            className="hidden md:flex bg-primaryPink text-white p-2.5 rounded-xl hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/20 items-center justify-center"
+            title="Tambah Dompet"
           >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Dompet</span>
+            <Plus className="w-5 h-5" />
           </button>
         </div>
 
@@ -171,8 +192,7 @@ export const Wallets: React.FC = () => {
                   </h3>
                   {w.institution && <p className="text-xs text-textMuted mb-3 flex items-center space-x-1"><Building2 className="w-3 h-3" /><span>{w.institution}</span></p>}
                 </div>
-                <div className="pt-3 border-t border-borderCustom mt-3 flex justify-between items-center">
-                  <span className="text-xs text-textMuted">Saldo</span>
+                <div className="pt-3 border-t border-borderCustom mt-3 flex justify-end items-center">
                   <p className="font-bold text-white text-base">{formatIDR(Number(w.currentBalance))}</p>
                 </div>
               </div>
@@ -200,9 +220,9 @@ export const Wallets: React.FC = () => {
                   </select>
                 </div>
 
-                {!isCustomName && INSTITUTIONS_MAP[type] && (
+                {INSTITUTIONS_MAP[type] && (
                   <div>
-                    <label className="block text-xs font-medium text-textSecondary mb-1.5">2. Pilih Bank / E-Wallet</label>
+                    <label className="block text-xs font-medium text-textSecondary mb-1.5">2. Pilih Bank / Instansi / E-Wallet</label>
                     <select
                       value={selectedInstitution}
                       onChange={(e) => handleInstitutionSelect(e.target.value)}
@@ -219,28 +239,26 @@ export const Wallets: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-medium text-textSecondary mb-1.5">
-                    Nama Dompet {isCustomName ? '' : '(Otomatis sesuai pilihan)'}
+                    Nama Dompet (Bisa dikustom, misal: Jago Belanja, BCA Bisnis)
                   </label>
                   <input
                     type="text"
                     required
-                    disabled={!isCustomName}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className={`w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink ${
-                      !isCustomName ? 'opacity-75 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Nama Dompet"
+                    className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
+                    placeholder="Contoh: Jago Belanja, BCA Keluarga"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-textSecondary mb-1.5">Saldo Awal (Rp)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    value={initialBalance}
-                    onChange={(e) => setInitialBalance(e.target.value)}
+                    value={formatNumberDot(initialBalance)}
+                    onChange={(e) => setInitialBalance(parseNumberDot(e.target.value))}
                     className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
                     placeholder="0"
                   />

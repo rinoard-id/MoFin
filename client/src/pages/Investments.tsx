@@ -164,7 +164,7 @@ export const Investments: React.FC = () => {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="absolute right-0 top-0 bg-primaryPink text-white p-2.5 rounded-xl shadow-xl shadow-primaryPink/40 hover:scale-105 transition-transform flex items-center justify-center z-20 border border-white/10"
+            className="absolute right-0 top-0 hidden md:flex bg-primaryPink text-white p-2.5 rounded-xl shadow-sm shadow-primaryPink/20 hover:scale-105 transition-transform items-center justify-center z-20 border border-white/10"
             title="Tambah Investasi"
           >
             <Plus className="w-5 h-5 text-white" />

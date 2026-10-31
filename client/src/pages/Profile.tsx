@@ -52,8 +52,6 @@ export const Profile: React.FC = () => {
       const updated = await api.put('/auth/profile', {
         name: profile.name,
         avatar: profile.avatar,
-        currency: profile.currency,
-        timezone: profile.timezone,
       });
       setProfile(updated);
       setSuccessMsg('Profil berhasil diperbarui!');
@@ -61,6 +59,21 @@ export const Profile: React.FC = () => {
       setErrorMsg(err.message || 'Gagal memperbarui profil');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran gambar maksimal 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        setProfile((prev: any) => ({ ...prev, avatar: uploadEvent.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -185,44 +198,29 @@ export const Profile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-textSecondary mb-1.5">URL Foto Profil (Avatar)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={profile.avatar || ''}
-                    onChange={(e) => setProfile({ ...profile, avatar: e.target.value })}
-                    placeholder="https://example.com/photo.jpg"
-                    className="flex-1 bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
-                  />
+                <label className="block text-xs font-medium text-textSecondary mb-1.5">Foto Profil</label>
+                <div className="flex items-center space-x-3">
+                  <label className="cursor-pointer bg-surfaceSecondary hover:bg-surface border border-borderCustom text-white px-4 py-2.5 rounded-xl text-xs font-medium flex items-center space-x-2 transition-colors">
+                    <Camera className="w-4 h-4 text-primaryPink" />
+                    <span>Pilih Foto dari Perangkat</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  {profile.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setProfile({ ...profile, avatar: '' })}
+                      className="text-xs text-errorRed hover:underline"
+                    >
+                      Hapus Foto
+                    </button>
+                  )}
                 </div>
-                <p className="text-[11px] text-textMuted mt-1">Masukkan URL gambar atau biarkan kosong untuk inisial nama.</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-textSecondary mb-1.5">Mata Uang</label>
-                  <select
-                    value={profile.currency}
-                    onChange={(e) => setProfile({ ...profile, currency: e.target.value })}
-                    className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
-                  >
-                    <option value="IDR">IDR (Rupiah)</option>
-                    <option value="USD">USD (Dollar)</option>
-                    <option value="EUR">EUR (Euro)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-textSecondary mb-1.5">Zona Waktu</label>
-                  <select
-                    value={profile.timezone}
-                    onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
-                    className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
-                  >
-                    <option value="Asia/Jakarta">WIB (Jakarta)</option>
-                    <option value="Asia/Makassar">WITA (Makassar)</option>
-                    <option value="Asia/Jayapura">WIT (Jayapura)</option>
-                  </select>
-                </div>
+                <p className="text-[11px] text-textMuted mt-1">Pilih file gambar (maks. 2MB) atau biarkan kosong untuk inisial nama.</p>
               </div>
 
               <button

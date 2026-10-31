@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Wallet, TrendingUp, ArrowUpRight, ArrowDownLeft, Plus, X, ArrowLeftRight } from 'lucide-react';
 import { api } from '../api';
@@ -6,6 +7,7 @@ import { db } from '../db';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [wallets, setWallets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [investments, setInvestments] = useState<any[]>([]);
@@ -22,9 +24,30 @@ export const Dashboard: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [payee, setPayee] = useState('');
 
+  const handleOpenTransactionModal = async () => {
+    try {
+      const freshWallets = await api.get('/wallets');
+      if (!freshWallets || freshWallets.length === 0) {
+        alert('Belum ada dompet. Silakan tambahkan dompet terlebih dahulu sebelum mencatat transaksi.');
+        navigate('/wallets');
+        return;
+      }
+      setWallets(freshWallets);
+      if (freshWallets.length > 0 && !walletId) {
+        setWalletId(freshWallets[0].id);
+      }
+      setShowAddTxModal(true);
+    } catch (err) {
+      alert('Belum ada dompet. Silakan tambahkan dompet terlebih dahulu sebelum mencatat transaksi.');
+      navigate('/wallets');
+    }
+  };
+
   useEffect(() => {
     loadData();
-    const handleOpen = () => setShowAddTxModal(true);
+    const handleOpen = () => {
+      handleOpenTransactionModal();
+    };
     window.addEventListener('open-add-transaction', handleOpen);
     return () => window.removeEventListener('open-add-transaction', handleOpen);
   }, []);
@@ -107,7 +130,7 @@ export const Dashboard: React.FC = () => {
     setTransactions([localTx, ...transactions]);
   };
 
-  const totalWalletBalance = wallets.reduce((acc, w) => acc + Number(w.initialBalance), 0);
+  const totalWalletBalance = wallets.reduce((acc, w) => acc + Number(w.currentBalance !== undefined ? w.currentBalance : w.initialBalance), 0);
   const totalInvestments = investments.reduce((acc, i) => acc + Number(i.units) * Number(i.instrument.currentPrice), 0);
   const totalNetWorth = totalWalletBalance + totalInvestments;
 
@@ -121,6 +144,27 @@ export const Dashboard: React.FC = () => {
 
   const formatIDR = (val: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+  };
+
+  const formatNumberDot = (val: string | number) => {
+    if (val === '' || val === undefined || val === null) return '';
+    const clean = String(val).replace(/\D/g, '');
+    if (!clean) return '';
+    return parseInt(clean, 10).toLocaleString('id-ID');
+  };
+
+  const parseNumberDot = (val: string) => {
+    return val.replace(/\./g, '');
+  };
+
+  const formatWalletType = (type: string) => {
+    switch (type) {
+      case 'BANK': return 'Bank';
+      case 'DIGITAL_BANK': return 'Digital';
+      case 'E_WALLET': return 'E-Wallet';
+      case 'CASH': return 'Cash';
+      default: return 'Custom';
+    }
   };
 
   const chartData = [
@@ -248,10 +292,10 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="font-semibold text-white text-sm">{w.name}</h4>
-                      <p className="text-xs text-textMuted">{w.type} {w.institution ? `• ${w.institution}` : ''}</p>
+                      <p className="text-xs text-textMuted">{formatWalletType(w.type)} {w.institution ? `• ${w.institution}` : ''}</p>
                     </div>
                   </div>
-                  <span className="font-bold text-white text-sm">{formatIDR(Number(w.initialBalance))}</span>
+                  <span className="font-bold text-white text-sm">{formatIDR(Number(w.currentBalance !== undefined ? w.currentBalance : w.initialBalance))}</span>
                 </div>
               ))
             )}
@@ -261,7 +305,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Floating Action Button (FAB) to open Add Transaction Modal (Desktop only) */}
       <button
-        onClick={() => setShowAddTxModal(true)}
+        onClick={handleOpenTransactionModal}
         className="hidden md:flex fixed bottom-8 right-8 bg-primaryPink text-white p-4 rounded-full shadow-2xl z-40 hover:scale-110 transition-transform items-center justify-center group"
         title="Tambah Transaksi"
       >
@@ -309,10 +353,11 @@ export const Dashboard: React.FC = () => {
               <div>
                 <label className="block text-xs font-medium text-textSecondary mb-1.5">Nominal (Rp)</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={formatNumberDot(amount)}
+                  onChange={(e) => setAmount(parseNumberDot(e.target.value))}
                   className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
                   placeholder="0"
                 />
@@ -326,7 +371,7 @@ export const Dashboard: React.FC = () => {
                   className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
                 >
                   {wallets.map((w) => (
-                    <option key={w.id} value={w.id}>{w.name} ({formatIDR(Number(w.currentBalance || w.initialBalance))})</option>
+                    <option key={w.id} value={w.id}>{w.name} - {w.institution || w.type} ({formatIDR(Number(w.currentBalance || w.initialBalance))})</option>
                   ))}
                 </select>
               </div>
@@ -341,7 +386,7 @@ export const Dashboard: React.FC = () => {
                   >
                     <option value="">Pilih Dompet Tujuan</option>
                     {wallets.filter((w) => w.id !== walletId).map((w) => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
+                      <option key={w.id} value={w.id}>{w.name} - {w.institution || w.type}</option>
                     ))}
                   </select>
                 </div>

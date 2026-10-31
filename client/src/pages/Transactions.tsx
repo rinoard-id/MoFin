@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { ArrowLeftRight, Plus, Search, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { api } from '../api';
 import { db } from '../db';
 
 export const Transactions: React.FC = () => {
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -17,10 +19,61 @@ export const Transactions: React.FC = () => {
   const [categoryId, setCategoryId] = useState('');
   const [notes, setNotes] = useState('');
   const [payee, setPayee] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState<'today' | '7days' | '1month' | 'custom'>('today');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const filteredTransactions = transactions.filter((t) => {
+    const txDate = new Date(t.date);
+    const now = new Date();
+    if (filterPeriod === 'today') {
+      return txDate.toDateString() === now.toDateString();
+    }
+    if (filterPeriod === '7days') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      return txDate >= sevenDaysAgo;
+    }
+    if (filterPeriod === '1month') {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(now.getMonth() - 1);
+      return txDate >= oneMonthAgo;
+    }
+    if (filterPeriod === 'custom') {
+      if (!startDate && !endDate) return true;
+      const start = startDate ? new Date(startDate) : new Date(0);
+      const end = endDate ? new Date(endDate) : new Date(8640000000000000);
+      end.setHours(23, 59, 59, 999);
+      return txDate >= start && txDate <= end;
+    }
+    return txDate.toDateString() === now.toDateString();
+  });
+
+  const handleOpenTransactionModal = async () => {
+    try {
+      const freshWallets = await api.get('/wallets');
+      if (!freshWallets || freshWallets.length === 0) {
+        alert('Belum ada dompet. Silakan tambahkan dompet terlebih dahulu sebelum mencatat transaksi.');
+        navigate('/wallets');
+        return;
+      }
+      setWallets(freshWallets);
+      if (freshWallets.length > 0 && !walletId) {
+        setWalletId(freshWallets[0].id);
+      }
+      setShowModal(true);
+    } catch (err: any) {
+      if (err.message === 'Unauthorized') return;
+      alert('Belum ada dompet. Silakan tambahkan dompet terlebih dahulu sebelum mencatat transaksi.');
+      navigate('/wallets');
+    }
+  };
 
   useEffect(() => {
     loadData();
-    const handleOpen = () => setShowModal(true);
+    const handleOpen = () => {
+      handleOpenTransactionModal();
+    };
     window.addEventListener('open-add-transaction', handleOpen);
     return () => window.removeEventListener('open-add-transaction', handleOpen);
   }, []);
@@ -103,6 +156,17 @@ export const Transactions: React.FC = () => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
   };
 
+  const formatNumberDot = (val: string | number) => {
+    if (val === '' || val === undefined || val === null) return '';
+    const clean = String(val).replace(/\D/g, '');
+    if (!clean) return '';
+    return parseInt(clean, 10).toLocaleString('id-ID');
+  };
+
+  const parseNumberDot = (val: string) => {
+    return val.replace(/\./g, '');
+  };
+
   return (
     <div className="min-h-screen bg-bgMain pb-24 md:pb-12">
       <Header title="Transaksi" subtitle="Pencatatan pemasukan, pengeluaran, dan transfer." />
@@ -111,20 +175,70 @@ export const Transactions: React.FC = () => {
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-bold text-white">Riwayat Transaksi</h2>
           <button
-            onClick={() => setShowModal(true)}
-            className="bg-primaryPink text-white p-2.5 rounded-xl hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/20 flex items-center justify-center"
+            onClick={handleOpenTransactionModal}
+            className="hidden md:flex bg-primaryPink text-white p-2.5 rounded-xl hover:bg-primaryPink/90 transition-colors shadow-lg shadow-primaryPink/20 items-center justify-center"
             title="Tambah Transaksi"
           >
             <Plus className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Period Filter Bar (Horizontally scrollable single line) */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none flex-nowrap">
+            {[
+              { id: 'today', label: 'Hari Ini' },
+              { id: '7days', label: '7 Hari' },
+              { id: '1month', label: '1 Bulan' },
+              { id: 'custom', label: 'Rentang Tgl' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilterPeriod(f.id as any)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors border flex-shrink-0 ${
+                  filterPeriod === f.id
+                    ? 'bg-primaryPink text-white border-primaryPink'
+                    : 'bg-surfaceSecondary text-textSecondary border-borderCustom hover:border-primaryPink/50'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filterPeriod === 'custom' && (
+            <div className="flex items-center space-x-2 bg-surface border border-borderCustom rounded-xl p-3">
+              <div className="flex-1">
+                <label className="block text-[10px] text-textMuted mb-1">Dari Tanggal</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-surfaceSecondary border border-borderCustom rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primaryPink"
+                />
+              </div>
+              <span className="text-textMuted text-xs pt-4">s/d</span>
+              <div className="flex-1">
+                <label className="block text-[10px] text-textMuted mb-1">Sampai Tanggal</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-surfaceSecondary border border-borderCustom rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primaryPink"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="bg-surface border border-borderCustom rounded-2xl overflow-hidden">
           <div className="divide-y divide-borderCustom">
-            {transactions.length === 0 ? (
-              <div className="p-8 text-center text-textMuted text-sm">Belum ada transaksi tercatat.</div>
+            {filteredTransactions.length === 0 ? (
+              <div className="p-8 text-center text-textMuted text-sm">
+                {filterPeriod === 'today' ? 'Belum ada transaksi hari ini.' : 'Belum ada transaksi tercatat untuk periode ini.'}
+              </div>
             ) : (
-              transactions.map((t) => (
+              filteredTransactions.map((t) => (
                 <div key={t.id} className="p-4 flex items-center justify-between hover:bg-surfaceSecondary transition-colors">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2.5 rounded-xl ${t.type === 'INCOME' ? 'bg-successGreen/10 text-successGreen' : t.type === 'EXPENSE' ? 'bg-errorRed/10 text-errorRed' : 'bg-infoBlue/10 text-infoBlue'}`}>
@@ -179,10 +293,11 @@ export const Transactions: React.FC = () => {
                 <div>
                   <label className="block text-xs font-medium text-textSecondary mb-1.5">Nominal (Rp)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    value={formatNumberDot(amount)}
+                    onChange={(e) => setAmount(parseNumberDot(e.target.value))}
                     className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
                     placeholder="0"
                   />
@@ -196,7 +311,7 @@ export const Transactions: React.FC = () => {
                     className="w-full bg-surfaceSecondary border border-borderCustom rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primaryPink"
                   >
                     {wallets.map((w) => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
+                      <option key={w.id} value={w.id}>{w.name} - {w.institution || w.type}</option>
                     ))}
                   </select>
                 </div>
@@ -211,7 +326,7 @@ export const Transactions: React.FC = () => {
                     >
                       <option value="">Pilih Dompet Tujuan</option>
                       {wallets.filter((w) => w.id !== walletId).map((w) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
+                        <option key={w.id} value={w.id}>{w.name} - {w.institution || w.type}</option>
                       ))}
                     </select>
                   </div>

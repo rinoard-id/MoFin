@@ -17,19 +17,6 @@ dotenv.config();
 const prisma = new PrismaClient();
 const server = Fastify({ logger: true });
 
-async function cleanDb() {
-  try {
-    await prisma.transaction.deleteMany({});
-    await prisma.wallet.deleteMany({});
-    await prisma.savingsGoal.deleteMany({});
-    await prisma.investmentHolding.deleteMany({});
-    console.log('Database successfully cleared of all transactions and records.');
-  } catch (e) {
-    console.log('Clean db note:', e);
-  }
-}
-cleanDb();
-
 // Seed comprehensive Investment Catalogs (IDX Stocks & Mutual Funds)
 async function seedCatalogs() {
   try {
@@ -143,6 +130,10 @@ server.register(jwt, {
 server.decorate('authenticate', async (request: any, reply: any) => {
   try {
     await request.jwtVerify();
+    const user = await prisma.user.findUnique({ where: { id: request.user.id } });
+    if (!user) {
+      return reply.code(401).send({ error: 'Unauthorized - User not found' });
+    }
   } catch (err) {
     reply.code(401).send({ error: 'Unauthorized' });
   }
@@ -286,12 +277,14 @@ server.get('/api/wallets', { preValidation: [server.authenticate] }, async (requ
     let balance = Number(w.initialBalance);
     transactions.forEach((t) => {
       if (t.walletId === w.id) {
-        if (t.type === 'INCOME' || t.type === 'REFUND') balance += Number(t.amount);
+        if (t.type === 'INCOME' || t.type === 'REFUND' || t.type === 'ADJUSTMENT') balance += Number(t.amount);
         if (t.type === 'EXPENSE') balance -= Number(t.amount) + Number(t.fee || 0);
         if (t.type === 'TRANSFER') balance -= Number(t.amount) + Number(t.fee || 0);
       }
-      if (t.targetWalletId === w.id && t.type === 'TRANSFER') {
-        balance += Number(t.amount);
+      if (t.targetWalletId === w.id) {
+        if (t.type === 'TRANSFER' || t.type === 'INCOME' || t.type === 'REFUND') {
+          balance += Number(t.amount);
+        }
       }
     });
     return { ...w, currentBalance: balance };
@@ -316,20 +309,28 @@ server.get('/api/wallets/:id', { preValidation: [server.authenticate] }, async (
   let balance = Number(wallet.initialBalance);
   allUserTxs.forEach((t) => {
     if (t.walletId === id) {
-      if (t.type === 'INCOME' || t.type === 'REFUND') balance += Number(t.amount);
+      if (t.type === 'INCOME' || t.type === 'REFUND' || t.type === 'ADJUSTMENT') balance += Number(t.amount);
       if (t.type === 'EXPENSE') balance -= Number(t.amount) + Number(t.fee || 0);
       if (t.type === 'TRANSFER') balance -= Number(t.amount) + Number(t.fee || 0);
     }
-    if (t.targetWalletId === id && t.type === 'TRANSFER') {
-      balance += Number(t.amount);
+    if (t.targetWalletId === id) {
+      if (t.type === 'TRANSFER' || t.type === 'INCOME' || t.type === 'REFUND') {
+        balance += Number(t.amount);
+      }
     }
   });
 
   const txsWithMutasi = transactions.map((t) => {
     const isOut = t.walletId === id;
+    let tags = [];
+    try {
+      tags = typeof t.tags === 'string' ? JSON.parse(t.tags || '[]') : (t.tags || []);
+    } catch (e) {
+      tags = [];
+    }
     return {
       ...t,
-      tags: JSON.parse(t.tags || '[]'),
+      tags,
       isOut,
     };
   });

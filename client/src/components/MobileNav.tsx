@@ -40,7 +40,7 @@ export const MobileNav: React.FC = () => {
         <div className="flex items-center justify-center pl-1">
           <button
             onClick={() => setShowChoiceModal(true)}
-            className="w-10 h-10 rounded-full bg-errorRed text-white flex items-center justify-center shadow-lg shadow-errorRed/40 ios-touch font-bold"
+            className="w-10 h-10 rounded-full bg-primaryPink text-white flex items-center justify-center shadow-sm shadow-primaryPink/20 ios-touch font-bold"
             title="Tambah Baru"
           >
             <Plus className="w-6 h-6" />
@@ -81,6 +81,19 @@ export const MobileNav: React.FC = () => {
                 className="w-full p-4 bg-surfaceSecondary hover:bg-primaryPink/20 hover:text-primaryPink text-white rounded-xl text-xs font-semibold flex items-center justify-between transition-colors border border-borderCustom shadow-sm"
               >
                 <span>Tambah Investasi</span>
+                <span className="text-primaryPink font-bold text-base">+</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowChoiceModal(false);
+                  navigate('/wallets');
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('open-add-wallet'));
+                  }, 50);
+                }}
+                className="w-full p-4 bg-surfaceSecondary hover:bg-primaryPink/20 hover:text-primaryPink text-white rounded-xl text-xs font-semibold flex items-center justify-between transition-colors border border-borderCustom shadow-sm"
+              >
+                <span>Tambah Dompet</span>
                 <span className="text-primaryPink font-bold text-base">+</span>
               </button>
             </div>
